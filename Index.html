@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <?!= include('Stylesheet'); ?>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Company App Portal</h1>
+      </div>
+      
+      <div id="content">
+        <!-- Content will be loaded here -->
+        <? if (loggedIn) { ?>
+          <?!= include('Home'); ?>
+        <? } else { ?>
+          <?!= include('Login'); ?>
+        <? } ?>
+      </div>
+      
+      <div id="loading" style="display:none;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+      </div>
+      
+      <div class="footer">
+        <p>&copy; <?= new Date().getFullYear() ?> Company Name</p>
+      </div>
+    </div>
+    
+    <!-- Always include JavaScript -->
+    <?!= include('JavaScript'); ?>
+  </body>
+</html>

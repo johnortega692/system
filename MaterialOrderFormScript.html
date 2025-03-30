@@ -1,426 +1,410 @@
-  // Store all equipment data
-  var allEquipment = <?= JSON.stringify(equipment) ?>;
-  var allJobs = <?= JSON.stringify(jobs) ?>;
-  var filteredEquipment = [];
-  var itemCount = 1;
-  
-  // Initialize form when loaded
-  document.addEventListener('DOMContentLoaded', function() {
-    // Set default dates
-    var tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    document.getElementById('startDate').value = tomorrow.toISOString().split('T')[0];
-    
-    var nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    document.getElementById('endDate').value = nextWeek.toISOString().split('T')[0];
-    
-    updateDuration();
-      // Initialize delivery fields based on selected option
-  toggleDeliveryAddress();
-    // Add event listeners
-    document.getElementById('wallcovering-order-form').addEventListener('submit', submitOrder);
-    document.getElementById('vendorId').addEventListener('change', filterEquipmentByVendor);
-    document.getElementById('jobId').addEventListener('input', showJobDetails);
-    document.getElementById('startDate').addEventListener('change', updateDuration);
-    document.getElementById('endDate').addEventListener('change', updateDuration);
-      document.getElementById('jobId').addEventListener('input', searchJobs);
-  document.getElementById('deliveryType').addEventListener('change', toggleDeliveryAddress);
-  
-    
-    // Initialize first equipment dropdown
-    filterEquipmentByVendor();
-  });
-google.script.run.withSuccessHandler(function(materials) {
-  const paintTypeDropdown = document.getElementById("paintType");
-  const seen = new Set();
+<script>
+let allProducts = [];
+let allSundries = [];
+let selectedItems = [];
+let allPackages = [];
 
-  materials.forEach(row => {
-    const vendor = row[1]; // Column B
-    if (vendor && !seen.has(vendor)) {
-      const option = document.createElement("option");
-      option.value = vendor;
-      option.textContent = vendor;
-      paintTypeDropdown.appendChild(option);
-      seen.add(vendor);
-    }
-  });
-}).getMaterialList();
+document.addEventListener('DOMContentLoaded', () => {
+  console.log("DOM fully loaded");
 
-
-
-  // Filter equipment based on vendor selection
-  function filterEquipmentByVendor() {
-    var vendorId = document.getElementById('vendorId').value;
-    filteredEquipment = allEquipment.filter(function(equipment) {
-      return vendorId === '' || equipment.vendorId === vendorId;
-    });
-    
-    // Update all equipment dropdowns
-    var equipmentDropdowns = document.getElementsByClassName('equipment-select');
-    for (var i = 0; i < equipmentDropdowns.length; i++) {
-      updateEquipmentDropdown(equipmentDropdowns[i]);
-    }
+  const jobSelector = document.getElementById("jobSelector");
+  if (jobSelector) {
+    console.log("jobSelector found", jobSelector);
+    loadJobs();  // Load the jobs once jobSelector is found
+  } else {
+    console.log("jobSelector not found");
   }
+
+  // Initialize form interactions after DOM is loaded
+  initTabs();
+  initDeliveryToggle();
   
-  // Update a specific equipment dropdown with filtered equipment
-  function updateEquipmentDropdown(dropdown) {
-    var selectedValue = dropdown.value;
-    
-    // Clear existing options except the first one
-    while (dropdown.options.length > 1) {
-      dropdown.remove(1);
-    }
-    
-    // Add filtered equipment
-    for (var i = 0; i < filteredEquipment.length; i++) {
-      var option = document.createElement('option');
-      option.value = filteredEquipment[i].id;
-      option.text = filteredEquipment[i].name + ' - $' + filteredEquipment[i].dailyRate.toFixed(2) + '/day';
-      dropdown.add(option);
-    }
-    
-    // Restore selected value if possible
-    if (selectedValue && Array.from(dropdown.options).some(opt => opt.value === selectedValue)) {
-      dropdown.value = selectedValue;
-    }
-  }
-  
-  // Show job details when job is selected
-  function showJobDetails() {
-    var jobId = document.getElementById('jobId').value;
-    var jobDetailsDiv = document.querySelector('.job-details');
-    var jobDetailContent = document.getElementById('job-detail-content');
-    
-    if (jobId) {
-      var job = allJobs.find(function(j) {
-        return j.id === jobId;
+  // Load data for dropdowns
+  loadVendors();
+  loadCategories();
+  loadProducts();
+  loadSundries();
+});
+
+function loadJobs() {
+  google.script.run.withSuccessHandler(jobs => {
+    const jobSelector = document.getElementById("jobSelector");
+    if (jobSelector) {
+      jobSelector.innerHTML = '<option value="">-- Select Job --</option>';
+      jobs.forEach(job => {
+        const option = document.createElement("option");
+        option.value = job.id;
+        option.textContent = `${job.id}`;  // Only show Job ID, hide PM name
+        jobSelector.appendChild(option);
       });
-      
-      if (job) {
-        jobDetailContent.innerHTML = '<p><strong>Name:</strong> ' + job.name + '</p>' +
-                                   '<p><strong>Address:</strong> ' + job.address + '</p>' +
-                                   '<p><strong>Client:</strong> ' + job.clientName + '</p>';
-        jobDetailsDiv.style.display = 'block';
-      } else {
-        jobDetailsDiv.style.display = 'none';
-      }
-    } else {
-      jobDetailsDiv.style.display = 'none';
-    }
-  }
-  
-  // Update duration display
-  function updateDuration() {
-    var startDate = document.getElementById('startDate').value;
-    var endDate = document.getElementById('endDate').value;
-    
-    if (startDate && endDate) {
-      var start = new Date(startDate);
-      var end = new Date(endDate);
-      
-      // Add 1 to include both start and end days
-      var days = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-      if (days < 1) days = 1;
-      
-      document.getElementById('duration-display').textContent = days + ' day' + (days !== 1 ? 's' : '');
-    } else {
-      document.getElementById('duration-display').textContent = '0 days';
-    }
-  }
-  
-  // Toggle delivery address based on delivery type
-  function toggleDeliveryAddress() {
-    var deliveryType = document.getElementById('deliveryType').value;
-    var addressGroup = document.getElementById('delivery-address-group');
-    
-    if (deliveryType === 'Delivery') {
-      addressGroup.style.display = 'block';
-      document.getElementById('deliveryAddress').setAttribute('required', '');
-    } else {
-      addressGroup.style.display = 'none';
-      document.getElementById('deliveryAddress').removeAttribute('required');
-    }
-  }
-  
-  // Add a new item row
-  function addItem() {
-    var container = document.getElementById('items-container');
-    var newRow = document.createElement('div');
-    newRow.className = 'item-row';
-    newRow.setAttribute('data-index', itemCount);
-    
-    newRow.innerHTML = `
-      <div class="form-group">
-        <label for="equipmentId-${itemCount}">Equipment:</label>
-        <select id="equipmentId-${itemCount}" name="items[${itemCount}].equipmentId" required class="equipment-select" data-index="${itemCount}">
-          <option value="">-- Select Equipment --</option>
-        </select>
-      </div>
-      
-      <div class="form-group">
-        <label for="quantity-${itemCount}">Quantity:</label>
-        <input type="number" id="quantity-${itemCount}" name="items[${itemCount}].quantity" required min="1" value="1">
-      </div>
-      
-      <div class="form-group">
-        <label for="notes-${itemCount}">Notes:</label>
-        <input type="text" id="notes-${itemCount}" name="items[${itemCount}].notes">
-      </div>
-      
-      <button type="button" class="btn btn-danger remove-item" data-index="${itemCount}" onclick="removeItem(${itemCount})">Remove</button>
-    `;
-    
-    container.appendChild(newRow);
-    
-    // Initialize the new equipment dropdown
-    var dropdown = document.getElementById(`equipmentId-${itemCount}`);
-    updateEquipmentDropdown(dropdown);
-    
-    itemCount++;
-  }
-  
-  // Remove an item row
-  function removeItem(index) {
-    var row = document.querySelector(`.item-row[data-index="${index}"]`);
-    if (row) {
-      row.parentNode.removeChild(row);
-    }
-  }
-  
-  // Submit the form
-  function submitOrder(e) {
-    e.preventDefault();
-    
-    // Show loading
-    window.parent.showLoading();
-    
-    // Get form data
-    var formData = {
-      jobId: document.getElementById('jobId').value,
-      vendorId: document.getElementById('vendorId').value,
-      deliveryType: document.getElementById('deliveryType').value,
-      deliveryAddress: document.getElementById('deliveryAddress').value,
-      startDate: document.getElementById('startDate').value,
-      endDate: document.getElementById('endDate').value,
-      notes: document.getElementById('notes').value,
-      items: []
-    };
-    
-    // Validate dates
-    var startDate = new Date(formData.startDate);
-    var endDate = new Date(formData.endDate);
-    if (endDate < startDate) {
-      window.parent.hideLoading();
-      var errorDiv = document.getElementById('form-error');
-      errorDiv.textContent = "End date cannot be before start date.";
-      errorDiv.style.display = 'block';
-      return;
-    }
-    
-    // Collect items
-    var itemRows = document.querySelectorAll('.item-row');
-    for (var i = 0; i < itemRows.length; i++) {
-      var index = itemRows[i].getAttribute('data-index');
-      var equipmentId = document.getElementById(`equipmentId-${index}`).value;
-      var quantity = document.getElementById(`quantity-${index}`).value;
-      var notes = document.getElementById(`notes-${index}`).value;
-      
-      if (equipmentId && quantity) {
-        formData.items.push({
-          equipmentId: equipmentId,
-          quantity: parseInt(quantity),
-          notes: notes
+
+      // Initialize Choices.js after populating the options
+      try {
+        new Choices(jobSelector, {
+          searchEnabled: true,
+          itemSelectText: '',
+          shouldSort: false,
         });
+      } catch (error) {
+        console.error("Error initializing Choices.js:", error);
       }
+
+      jobSelector.addEventListener("change", function () {
+        console.log("Job selected:", jobSelector.value);
+      });
     }
-    
-    // Submit to server
-    google.script.run
-      .withSuccessHandler(function(result) {
-        window.parent.hideLoading();
-        
-        if (result.success) {
-          // Show success message
-          var successDiv = document.getElementById('form-success');
-          successDiv.textContent = result.message;
-          successDiv.style.display = 'block';
-          
-          // Hide error message if visible
-          document.getElementById('form-error').style.display = 'none';
-          
-          // Reset form
-          document.getElementById('wallcovering-order-form').reset();
-          
-          // Provide link to PDF
-          if (result.pdfUrl) {
-            successDiv.innerHTML += '<br><a href="' + result.pdfUrl + '" target="_blank">View Order PDF</a>';
-          }
-          
-          // Reset form state
-          resetForm();
-        } else {
-          // Show error message
-          var errorDiv = document.getElementById('form-error');
-          errorDiv.textContent = result.message;
-          errorDiv.style.display = 'block';
-          
-          // Hide success message if visible
-          document.getElementById('form-success').style.display = 'none';
-        }
-      })
-      .withFailureHandler(function(error) {
-        window.parent.hideLoading();
-        
-        // Show error message
-        var errorDiv = document.getElementById('form-error');
-        errorDiv.textContent = "Error: " + error.toString();
-        errorDiv.style.display = 'block';
-        
-        // Hide success message if visible
-        document.getElementById('form-success').style.display = 'none';
-      })
-      .submitWallcoveringOrder(formData);
-  }
-  function initializeTabs() {
-  var tabButtons = document.querySelectorAll('.tab-button');
-
-  tabButtons.forEach(function(button) {
-    button.addEventListener('click', function() {
-      document.querySelectorAll('.tab-button').forEach(function(btn) {
-        btn.classList.remove('active');
-      });
-
-      document.querySelectorAll('.tab-pane').forEach(function(pane) {
-        pane.classList.remove('active');
-      });
-
-      this.classList.add('active');
-      var tabId = this.getAttribute('data-tab') + '-tab';
-      document.getElementById(tabId).classList.add('active');
-    });
-  });
+  }).getJobsWithContacts();
 }
 
-  // Reset form to initial state
-  function resetForm() {
-    // Set default dates
-    var tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    document.getElementById('startDate').value = tomorrow.toISOString().split('T')[0];
-    
-    var nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    document.getElementById('endDate').value = nextWeek.toISOString().split('T')[0];
-    
-    updateDuration();
-    
-    // Clear all items except the first one
-    var container = document.getElementById('items-container');
-    var itemRows = document.querySelectorAll('.item-row');
-    
-    for (var i = itemRows.length - 1; i > 0; i--) {
-      container.removeChild(itemRows[i]);
+
+// Load other dropdowns similarly...
+
+function loadVendors() {
+  google.script.run.withSuccessHandler(vendors => {
+    const vendorSelect = document.getElementById("paintVendor");
+    if (vendorSelect) {
+      vendorSelect.innerHTML = '<option value="">-- Select Vendor --</option>';
+      vendors.forEach(v => {
+        const option = document.createElement("option");
+        option.value = v.id;
+        option.textContent = v.name;  // Display vendor name
+        vendorSelect.appendChild(option);
+      });
+
+      vendorSelect.addEventListener("change", function () {
+        // Filter products based on selected vendor
+        filterPaint();
+      });
     }
+  }).getVendors();
+}
+
+
+// Function to load the packages from the "Sundries Packages" sheet
+function loadPackages() {
+  google.script.run.withSuccessHandler(packages => {
+    const packageSelector = document.getElementById("packageSelector");
+    packageSelector.innerHTML = '<option value="">-- Select Package --</option>';  // Reset dropdown
+
+    packages.forEach(pkg => {
+      const option = document.createElement("option");
+      option.value = pkg.packageName;  // Package Name used as value
+      option.textContent = pkg.packageName;  // Package Name displayed in dropdown
+      packageSelector.appendChild(option);
+    });
+  }).getPackages(); // Calls the Apps Script function to get packages
+}
+
+
+
+function loadCategories() {
+  google.script.run.withSuccessHandler(categories => {
+    const typeSelect = document.getElementById("paintType");
+    typeSelect.innerHTML = '<option value="">-- Select Type --</option>';
+    categories.forEach(c => {
+      const option = document.createElement("option");
+      option.value = c;
+      option.textContent = c;
+      typeSelect.appendChild(option);
+    });
+  }).getProductCategories();
+}
+
+function loadProducts() {
+  google.script.run.withSuccessHandler(products => {
+    allProducts = products;
+
+    // Attach filters
+    document.getElementById("paintVendor").addEventListener("change", filterPaint);
+    document.getElementById("paintType").addEventListener("change", filterPaint);
+
+    // Initial render (optional)
+    filterPaint();
+  }).getProducts();
+}
+function loadSundriesPackages() {
+  google.script.run.withSuccessHandler(packages => {
+    const sundriesPackageSelect = document.getElementById("sundriesPackage");
+    sundriesPackageSelect.innerHTML = '<option value="">-- Select Package --</option>';
     
-    // Reset first item
-    document.getElementById('equipmentId-0').value = '';
-    document.getElementById('quantity-0').value = '1';
-    document.getElementById('notes-0').value = '';
-    
-    // Reset item counter
-    itemCount = 1;
-    
-    // Hide job details
-    document.querySelector('.job-details').style.display = 'none';
-    
-    // Reset delivery address display
-    toggleDeliveryAddress();
-  }
-  
-  // Return to home screen
-  function returnToHome() {
-    window.parent.loadModule('Home');
-  }
-function searchJobs() {
-  var searchTerm = document.getElementById('jobId').value.toLowerCase();
-  var resultsContainer = document.getElementById('job-search-results');
-  
-  if (searchTerm.length < 2) {
-    resultsContainer.style.display = 'none';
-    return;
-  }
-  
-  var matchingJobs = allJobs.filter(function(job) {
-    return job.id.toLowerCase().includes(searchTerm);
-  });
-  
-  if (matchingJobs.length === 0) {
-    resultsContainer.style.display = 'none';
-    return;
-  }
-  
-  // Clear previous results
-  resultsContainer.innerHTML = '';
-  
-  // Add matching jobs to results
-  matchingJobs.slice(0, 5).forEach(function(job) {
-    var jobElement = document.createElement('div');
-    jobElement.className = 'search-result-item';
-    jobElement.textContent = job.id;
-    jobElement.onclick = function() {
-      document.getElementById('jobId').value = job.id;
-      document.getElementById('jobAddress').value = job.address || '';
-      resultsContainer.style.display = 'none';
-      showJobDetails(job.id);
+    // Loop through packages and add them to the dropdown
+    for (const packageName in packages) {
+      const option = document.createElement("option");
+      option.value = packageName;
+      option.textContent = packageName;
+      sundriesPackageSelect.appendChild(option);
+    }
+
+    sundriesPackageSelect.addEventListener("change", function () {
+      const selectedPackage = sundriesPackageSelect.value;
+      if (selectedPackage) {
+        addSundriesPackageToOrder(packages[selectedPackage]);
+      }
+    });
+  }).getSundriesPackages();
+}
+
+function addSundriesPackageToOrder(packageItems) {
+  packageItems.forEach(item => {
+    const selectedProduct = {
+      name: item.name,
+      qty: item.qty,
+      type: "sundries"
     };
-    resultsContainer.appendChild(jobElement);
+
+    // Add the item to the selected items
+    addItem(selectedProduct, item.qty);
   });
-  
-  resultsContainer.style.display = 'block';
+  renderSelectedItems();
 }
 
-function showJobDetails(jobId) {
-  var jobDetailsDiv = document.querySelector('.job-details');
-  var jobDetailContent = document.getElementById('job-detail-content');
-  
-  if (!jobId) {
-    jobId = document.getElementById('jobId').value;
-  }
-  
-  if (jobId) {
-    var job = allJobs.find(function(j) {
-      return j.id === jobId;
+
+function addSelectedPackage() {
+  const packageName = document.getElementById("packageSelector").value;
+
+  if (!packageName) return;  // If no package is selected, do nothing
+
+  // Find the selected package from the allPackages array
+  const selectedPackage = allPackages.find(pkg => pkg.packageName === packageName);
+  console.log("Selected Package:", selectedPackage);  // Log the selected package for debugging
+
+  if (!selectedPackage) return;  // Check if package is valid
+
+  // Add items from the selected package to the "Selected Items" list
+  selectedPackage.items.forEach(item => {
+    const selectedItem = {
+      name: item.itemName,
+      qty: item.qty,
+      packageName: packageName,  // To indicate which package this item came from
+    };
+    addItem(selectedItem, item.qty);  // Use your existing addItem function to add the item
+  });
+
+  renderSelectedItems();  // Re-render the selected items table
+}
+
+
+function loadSundries() {
+  google.script.run.withSuccessHandler(sundries => {
+    allSundries = sundries;
+    const categorySelect = document.getElementById("sundriesCategory");
+    categorySelect.innerHTML = '<option value="">-- Select Category --</option>';
+    const seen = new Set();
+    sundries.forEach(item => {
+      if (!seen.has(item.category)) {
+        const option = document.createElement("option");
+        option.value = item.category;
+        option.textContent = item.category;
+        categorySelect.appendChild(option);
+        seen.add(item.category);
+      }
     });
-    
-    if (job) {
-      jobDetailContent.innerHTML = '<p><strong>Job:</strong> ' + job.id + '</p>' +
-                               '<p><strong>PM:</strong> ' + job.pm.name + ' (' + job.pm.email + ')</p>' +
-                               '<p><strong>Super:</strong> ' + job.super.name + ' (' + job.super.email + ')</p>';
-      jobDetailsDiv.style.display = 'block';
-      
-      // Set the job address
-      document.getElementById('jobAddress').value = job.address || '';
-    } else {
-      jobDetailsDiv.style.display = 'none';
-    }
-  } else {
-    jobDetailsDiv.style.display = 'none';
-  }
+    categorySelect.addEventListener("change", filterSundries);
+    filterSundries();
+  }).getSundries();
 }
 
-function toggleDeliveryAddress() {
-  var deliveryType = document.getElementById('deliveryType').value;
-  var deliveryFields = document.getElementById('delivery-fields');
-  var willcallFields = document.getElementById('willcall-fields');
-  
-  if (deliveryType === 'Delivery') {
-    deliveryFields.style.display = 'block';
-    willcallFields.style.display = 'none';
-    document.getElementById('deliveryAddress').setAttribute('required', '');
-  } else {
-    deliveryFields.style.display = 'none';
-    willcallFields.style.display = 'block';
-    document.getElementById('deliveryAddress').removeAttribute('required');
-  }
+function filterPaint() {
+  const vendor = document.getElementById("paintVendor").value;
+  const dropdown = document.getElementById("paintProduct");
+
+  // Filter products based on selected vendor
+  const filtered = allProducts.filter(p => p.vendorId === vendor);
+
+  dropdown.innerHTML = '<option value="">-- Select Product --</option>';  // Reset dropdown
+  filtered.forEach(p => {
+    const option = document.createElement("option");
+    option.value = p.id;
+    option.textContent = p.name;
+    dropdown.appendChild(option);
+  });
 }
+
+function addSelectedSundries() {
+  const productId = document.getElementById("sundries-container").value;
+  const qty = parseInt(document.getElementById("sundriesQty").value);
+  const product = allSundries.find(s => s.id === productId);
+
+  if (!product || !qty || qty < 1) return;  // Ensure valid product and qty
+
+  const selectedProduct = {
+    id: product.id,
+    name: product.name,
+    vendor: product.vendorId,
+    qty: qty,
+    type: "sundries"  // Mark it as a sundries item
+  };
+
+  addItem(selectedProduct, qty);  // Add the item to the selected items list
+}
+
+
+function addSelectedPaint() {
+  const productId = document.getElementById("paintProduct").value;
+  const qty = parseInt(document.getElementById("paintQty").value);
+  const color = document.getElementById("paintColor").value;  // Get the entered paint color
+  const sheen = document.getElementById("paintSheen").value;  // Get the selected sheen
+  const product = allProducts.find(p => p.id === productId);
+
+  if (!product || !qty || qty < 1) return;  // Ensure valid product and qty
+
+  const selectedProduct = {
+    id: product.id,
+    name: product.name,
+    vendor: product.vendorId,
+    color: color,  // Add color
+    sheen: sheen,  // Add sheen
+    qty: qty,
+    type: "paint"  // Mark it as a paint item
+  };
+
+  addItem(selectedProduct, qty);  // Add the item to the selected items list
+}
+
+
+
+
+
+function filterSundries() {
+  const category = document.getElementById("sundriesCategory").value;
+  const dropdown = document.getElementById("sundries-container");
+
+  // Filter only by category
+  const filtered = allSundries.filter(s => category === "" || s.category === category);
+
+  dropdown.innerHTML = '';  // Clear the dropdown
+
+  if (filtered.length === 0) {
+    dropdown.innerHTML = '<p>No matching sundries found</p>';
+    return;
+  }
+
+  filtered.forEach(item => {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = item.name;
+    dropdown.appendChild(option);
+  });
+}
+
+
+function renderProducts(products, container) {
+  container.innerHTML = "";
+  if (!products.length) {
+    container.innerHTML = "<p>No products found</p>";
+    return;
+  }
+
+  products.forEach(prod => {
+    const card = document.createElement("div");
+    card.className = "product-card"; // ← This is the class you're asking about
+    card.innerHTML = `
+      <h4>${prod.name}</h4>
+      <p>${prod.category || ""}</p>
+      <input type="number" min="1" value="1" class="product-qty">
+      <button class="btn btn-primary">Add</button>
+    `;
+    card.querySelector("button").addEventListener("click", () => {
+      const qty = parseInt(card.querySelector(".product-qty").value);
+      addItem(prod, qty);
+    });
+    container.appendChild(card);
+  });
+}
+
+
+function addItem(product, qty) {
+  const existing = selectedItems.find(item => item.name === product.name && item.packageName === product.packageName);
+  if (existing) {
+    existing.qty += qty;  // Add the quantity if item already exists
+  } else {
+    selectedItems.push({ ...product, qty: qty });
+  }
+  renderSelectedItems();  // Re-render the table after adding the item
+}
+
+
+function renderSelectedItems() {
+  const paintTbody = document.getElementById("selected-paint-items-body");
+  const sundriesTbody = document.getElementById("selected-sundries-items-body");
+
+  // Clear both tables
+  paintTbody.innerHTML = '';
+  sundriesTbody.innerHTML = '';
+
+  if (selectedItems.length === 0) {
+    paintTbody.innerHTML = '<tr id="no-paint-items-row"><td colspan="6">No paint items selected</td></tr>';
+    sundriesTbody.innerHTML = '<tr id="no-sundries-items-row"><td colspan="4">No sundries items selected</td></tr>';
+    return;
+  }
+
+  selectedItems.forEach((item, idx) => {
+    const row = document.createElement("tr");
+
+    if (item.type === "paint") {
+      row.innerHTML = `
+        <td>${item.name}</td>
+        <td><input type="text" value="${item.color || ''}" data-idx="${idx}" class="update-color"></td>
+        <td><input type="text" value="${item.sheen || ''}" data-idx="${idx}" class="update-sheen"></td>
+        <td><input type="number" min="1" value="${item.qty}" data-idx="${idx}" class="update-qty"></td>
+        <td><input type="text" value="${item.notes || ''}" data-idx="${idx}" class="update-note"></td>
+        <td><button class="btn btn-danger" data-idx="${idx}">Remove</button></td>
+      `;
+      paintTbody.appendChild(row);
+    } else if (item.type === "sundries") {
+      row.innerHTML = `
+        <td>${item.name}</td>
+        <td><input type="number" min="1" value="${item.qty}" data-idx="${idx}" class="update-qty"></td>
+        <td><input type="text" value="${item.notes || ''}" data-idx="${idx}" class="update-note"></td>
+        <td><button class="btn btn-danger" data-idx="${idx}">Remove</button></td>
+      `;
+      sundriesTbody.appendChild(row);
+    }
+
+    // Event listeners for color, sheen, and qty updates
+    row.querySelector(".update-color")?.addEventListener("change", (e) => {
+      selectedItems[idx].color = e.target.value;  // Update color in selectedItems
+    });
+    row.querySelector(".update-sheen")?.addEventListener("change", (e) => {
+      selectedItems[idx].sheen = e.target.value;  // Update sheen in selectedItems
+    });
+    row.querySelector(".update-qty").addEventListener("change", (e) => {
+      selectedItems[idx].qty = parseInt(e.target.value);  // Update quantity
+      renderSelectedItems();
+    });
+    row.querySelector(".update-note").addEventListener("change", (e) => {
+      selectedItems[idx].notes = e.target.value;  // Update notes
+    });
+    row.querySelector("button").addEventListener("click", () => {
+      selectedItems.splice(idx, 1);  // Remove item
+      renderSelectedItems();
+    });
+  });
+}
+
+
+
+
+
+
+
+function initTabs() {
+  const tabButtons = document.querySelectorAll(".tab-button");
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      tabButtons.forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(`${btn.dataset.tab}-tab`).classList.add("active");
+    });
+  });
+}
+
+function initDeliveryToggle() {
+  const deliveryType = document.getElementById("deliveryType");
+  const addressGroup = document.getElementById("delivery-address-group");
+  deliveryType.addEventListener("change", () => {
+    addressGroup.style.display = deliveryType.value === "Delivery" ? "block" : "none";
+  });
+}
+</script>

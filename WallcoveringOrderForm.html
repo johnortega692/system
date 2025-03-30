@@ -1,0 +1,128 @@
+<div class="wallcovering-order-form">
+  <div class="form-header">
+    <h2>Wallcovering Equipment Order Form</h2>
+    <button onclick="returnToHome()" class="btn btn-secondary">Back to Home</button>
+  </div>
+  
+  <div id="form-error" class="error-message" style="display:none;"></div>
+  <div id="form-success" class="success-message" style="display:none;"></div>
+  
+  <form id="wallcovering-order-form">
+    <div class="form-section">
+      <h3>Job Information</h3>
+      
+      <div class="form-group">
+        <label for="jobId">Job Number:</label>
+        <input type="text" id="jobId" name="jobId" required list="job-list">
+        <datalist id="job-list">
+          <? for (var i = 0; i < jobs.length; i++) { ?>
+            <option value="<?= jobs[i].id ?>"><?= jobs[i].id ?> - <?= jobs[i].name ?></option>
+          <? } ?>
+        </datalist>
+      </div>
+      
+      <div class="form-group job-details" style="display:none;">
+        <label>Job Details:</label>
+        <div id="job-detail-content"></div>
+      </div>
+    </div>
+    
+    <div class="form-section">
+      <h3>Vendor Information</h3>
+      
+      <div class="form-group">
+        <label for="vendorId">Select Vendor:</label>
+        <select id="vendorId" name="vendorId" required>
+          <option value="">-- Select Vendor --</option>
+          <? for (var i = 0; i < vendors.length; i++) { ?>
+            <option value="<?= vendors[i].id ?>"><?= vendors[i].name ?></option>
+          <? } ?>
+        </select>
+      </div>
+    </div>
+    
+    <div class="form-section">
+      <h3>Rental Period</h3>
+      
+      <div class="form-group">
+        <label for="startDate">Start Date:</label>
+        <input type="date" id="startDate" name="startDate" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="endDate">End Date:</label>
+        <input type="date" id="endDate" name="endDate" required>
+      </div>
+      
+      <div class="rental-duration">
+        <span id="duration-display">0 days</span>
+      </div>
+    </div>
+    
+    <div class="form-section">
+      <h3>Delivery Information</h3>
+      
+      <div class="form-group">
+        <label for="deliveryType">Delivery Type:</label>
+        <select id="deliveryType" name="deliveryType" required onchange="toggleDeliveryAddress()">
+          <option value="Will Call">Will Call</option>
+          <option value="Delivery">Delivery</option>
+        </select>
+      </div>
+      
+      <div class="form-group" id="delivery-address-group" style="display:none;">
+        <label for="deliveryAddress">Delivery Address:</label>
+        <textarea id="deliveryAddress" name="deliveryAddress" rows="3"></textarea>
+      </div>
+    </div>
+    
+    <div class="form-section">
+      <h3>Equipment Items</h3>
+      
+      <div id="items-container">
+        <!-- Item rows will be added here -->
+        <div class="item-row" data-index="0">
+          <div class="form-group">
+            <label for="equipmentId-0">Equipment:</label>
+            <select id="equipmentId-0" name="items[0].equipmentId" required class="equipment-select" data-index="0">
+              <option value="">-- Select Equipment --</option>
+              <!-- Equipment will be filtered based on vendor selection -->
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="quantity-0">Quantity:</label>
+            <input type="number" id="quantity-0" name="items[0].quantity" required min="1" value="1">
+          </div>
+          
+          <div class="form-group">
+            <label for="notes-0">Notes:</label>
+            <input type="text" id="notes-0" name="items[0].notes">
+          </div>
+          
+          <button type="button" class="btn btn-danger remove-item" data-index="0" onclick="removeItem(0)">Remove</button>
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="addItem()">Add Another Item</button>
+      </div>
+    </div>
+    
+    <div class="form-section">
+      <h3>Additional Information</h3>
+      
+      <div class="form-group">
+        <label for="notes">Order Notes:</label>
+        <textarea id="notes" name="notes" rows="3"></textarea>
+      </div>
+    </div>
+    
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Submit Order</button>
+      <button type="button" class="btn btn-secondary" onclick="returnToHome()">Cancel</button>
+    </div>
+  </form>
+</div>
+<!-- Include external JavaScript -->
+<?!= include('MaterialOrderFormScript'); ?>

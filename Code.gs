@@ -393,6 +393,50 @@ function getJobs() {
     return [];
   }
 }
+function getPackages() {
+  try {
+    // Use the getMaterialOrderingSpreadsheet function to access the sheet
+    var ss = getMaterialOrderingSpreadsheet(); 
+    var sheet = ss.getSheetByName('Sundries Packages');
+    
+    if (!sheet) {
+      Logger.log("Sheet 'Sundries Packages' not found.");
+      return [];
+    }
+    
+    var data = sheet.getDataRange().getValues();
+    var packages = [];
+    let currentPackage = null;
+
+    // Loop through the data, starting from row 1 to skip header
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const packageName = row[0]; // Package name in column A
+      const itemName = row[1]; // Item name in column B
+      const qty = row[2]; // Quantity in column C
+
+      // Create a new package if the package name changes
+      if (!currentPackage || currentPackage.packageName !== packageName) {
+        if (currentPackage) packages.push(currentPackage); // Push the last package
+        currentPackage = { packageName: packageName, items: [] }; // Start a new package
+      }
+
+      // Add the item to the current package
+      currentPackage.items.push({ itemName: itemName, qty: qty });
+    }
+
+    // Push the last package
+    if (currentPackage) packages.push(currentPackage);
+
+    return packages;
+  } catch (e) {
+    Logger.log("Error getting packages: " + e.toString());
+    return [];
+  }
+}
+
+
+
 
 // Testing function to check if the app is working
 function testApp() {

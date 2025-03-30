@@ -1,0 +1,39 @@
+<div class="home-content">
+  <div class="welcome-section">
+    <h2>Welcome, <?= userData.firstName || 'User' ?> <?= userData.lastName || '' ?></h2>
+    <p>Select a module below to get started:</p>
+  </div>
+  
+  <div class="modules-grid">
+    <? var modules = userData.modules || []; ?>
+    <? for (var i = 0; i < modules.length; i++) { ?>
+      <? if (modules[i] === 'MaterialOrderForm') { ?>
+        <div class="module-card">
+          <h3>Material Order Form</h3>
+          <p>Create and manage material orders for jobs</p>
+          <button onclick="loadModule('MaterialOrderForm')" class="btn btn-primary">Open</button>
+        </div>
+      <? } ?>
+      
+      <? if (modules[i] === 'WallcoveringOrderForm') { ?>
+        <div class="module-card">
+          <h3>Wallcovering Equipment Order</h3>
+          <p>Manage wallcovering equipment orders</p>
+          <button onclick="loadModule('WallcoveringOrderForm')" class="btn btn-primary">Open</button>
+        </div>
+      <? } ?>
+      
+      <? if (modules[i] === 'Dashboard') { ?>
+        <div class="module-card">
+          <h3>Order Dashboard</h3>
+          <p>View order analytics and history</p>
+          <button onclick="loadModule('Dashboard')" class="btn btn-primary">Open</button>
+        </div>
+      <? } ?>
+    <? } ?>
+  </div>
+  
+  <div class="logout-section">
+    <button onclick="logout()" class="btn btn-secondary">Logout</button>
+  </div>
+</div>

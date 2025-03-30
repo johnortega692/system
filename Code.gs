@@ -1,55 +1,36 @@
 // Code.gs (Main Entry Point)
 
-function doGet(e) {
-  try {
-    var userProps = PropertiesService.getUserProperties();
-    var loggedInUser = userProps.getProperty('username');
-    
-    if (loggedInUser) {
-      // User is logged in, show home page
-      var userData = getUserData(loggedInUser);
-      
-      if (!userData) {
-        // Handle case where user data couldn't be retrieved
-        var template = HtmlService.createTemplateFromFile('Login');
-        template.loginError = "User session expired. Please log in again.";
-        return template.evaluate()
-          .setTitle('Company App Portal')
-          .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-      }
-      
-      var homeTemplate = HtmlService.createTemplateFromFile('Home');
+function doGet() {
+  const userProps = PropertiesService.getUserProperties();
+  const username = userProps.getProperty('username');
+
+  const mainTemplate = HtmlService.createTemplateFromFile('Index');
+  mainTemplate.loggedIn = false;
+
+  if (username) {
+    const userData = getUserData(username);
+    if (userData) {
+      const homeTemplate = HtmlService.createTemplateFromFile('Home');
       homeTemplate.userData = userData;
-      
-      var htmlContent = homeTemplate.evaluate().getContent();
-      
-      var mainTemplate = HtmlService.createTemplateFromFile('Index');
-      mainTemplate.content = htmlContent;
+
+      const homeHtml = homeTemplate.evaluate().getContent(); // ← inject as HTML
+      mainTemplate.content = homeHtml;
       mainTemplate.loggedIn = true;
-      
-      return mainTemplate.evaluate()
-        .setTitle('Company App Portal')
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
     } else {
-      // User is not logged in, show login page
-      var loginTemplate = HtmlService.createTemplateFromFile('Login');
-      var loginContent = loginTemplate.evaluate().getContent();
-      
-      var mainTemplate = HtmlService.createTemplateFromFile('Index');
-      mainTemplate.content = loginContent;
-      mainTemplate.loggedIn = false;
-      
-      return mainTemplate.evaluate()
-        .setTitle('Company App Portal')
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+      const loginTemplate = HtmlService.createTemplateFromFile('Login');
+      mainTemplate.content = loginTemplate.evaluate().getContent();
     }
-  } catch (e) {
-    Logger.log("Error in doGet: " + e.toString());
-    return HtmlService.createHtmlOutput(
-      '<h1>System Error</h1><p>' + e.toString() + '</p>'
-    );
+  } else {
+    const loginTemplate = HtmlService.createTemplateFromFile('Login');
+    mainTemplate.content = loginTemplate.evaluate().getContent();
   }
+
+  return mainTemplate.evaluate()
+    .setTitle('Company App Portal')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
+
+
 // Helper function to refresh user session
 // Helper function to refresh user session
 function refreshUserSession(username) {
@@ -202,57 +183,42 @@ function initializeSheets(ss) {
     return false;
   }
 }
-
-// Authenticate user against User sheet
-// In Code.gs - Authenticate user function
-// Authenticate user against User sheet
-function authenticateUser(username, password) {
+function getLoginHtml() {
   try {
-    // Get the spreadsheet and users sheet
-    var ss = getMainSpreadsheet();
-    var userSheet = ss.getSheetByName('Users');
-    
-    if (!userSheet) {
-      return { success: false, message: "System error: Users sheet not found" };
-    }
-    
-    var data = userSheet.getDataRange().getValues();
-    
-    // Check credentials (skip header row)
-    for (var i = 1; i < data.length; i++) {
-      if (data[i][0] === username && data[i][1] === password) {
-        // Store user session data
-        var userProps = PropertiesService.getUserProperties();
-        userProps.setProperty('username', username);
-        
-        // Return user data directly with the response
-        var userData = {
-          username: username,
-          firstName: data[i][3] || "User",
-          lastName: data[i][4] || "",
-          email: data[i][2] || "",
-          modules: (data[i][5] || "").split(',').map(m => m.trim())
-        };
-        
-        // Get the home page HTML
-        var homeTemplate = HtmlService.createTemplateFromFile('Home');
-        homeTemplate.userData = userData;
-        var homeHtml = homeTemplate.evaluate().getContent();
-        
-        return {
-          success: true,
-          userData: userData,
-          homeHtml: homeHtml
-        };
-      }
-    }
-    
-    return { success: false, message: "Invalid username or password" };
+    return HtmlService.createHtmlOutputFromFile('Login').getContent();
   } catch (e) {
-    Logger.log("Authentication error: " + e.toString());
-    return { success: false, message: "System error: " + e.toString() };
+    Logger.log("Error in getLoginHtml: " + e.toString());
+    return "<div>Error loading login screen</div>";
   }
 }
+
+function authenticateUser(username, password) {
+  const ss = getMainSpreadsheet(); // use centralized access
+  const sheet = ss.getSheetByName('Users');
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    const user = data[i][0]?.toString().trim().toLowerCase();
+    const pass = data[i][1]?.toString().trim();
+
+    if (user === username.toLowerCase().trim() && pass === password.trim()) {
+      PropertiesService.getUserProperties().setProperty("username", user);
+      return {
+        success: true,
+        username: user,
+        modules: data[i][5] || ""
+      };
+    }
+  }
+
+  return {
+    success: false,
+    message: 'Invalid username or password'
+  };
+}
+
+
+
 
 // Get user data from sheet
 function getUserData(username) {
@@ -435,39 +401,16 @@ function testApp() {
 }
 
 function getHomeHtml() {
-  try {
-    var userProps = PropertiesService.getUserProperties();
-    var username = userProps.getProperty('username');
-    
-    if (!username) {
-      return {
-        success: false,
-        message: "Session expired. Please log in again."
-      };
-    }
-    
-    var userData = getUserData(username);
-    
-    if (!userData) {
-      return {
-        success: false,
-        message: "User data not found. Please log in again."
-      };
-    }
-    
-    var homeTemplate = HtmlService.createTemplateFromFile('Home');
-    homeTemplate.userData = userData;
-    var homeHtml = homeTemplate.evaluate().getContent();
-    
-    return {
-      success: true,
-      homeHtml: homeHtml
-    };
-  } catch (e) {
-    Logger.log("Get home HTML error: " + e.toString());
-    return {
-      success: false,
-      message: "Error: " + e.toString()
-    };
-  }
+  const userProps = PropertiesService.getUserProperties();
+  const username = userProps.getProperty('username');
+  if (!username) return { success: false, message: "Session expired" };
+
+  const userData = getUserData(username);
+  if (!userData) return { success: false, message: "User data not found" };
+
+  const template = HtmlService.createTemplateFromFile('Home');
+  template.userData = userData;
+  const html = template.evaluate().getContent();
+  return { success: true, homeHtml: html };
 }
+

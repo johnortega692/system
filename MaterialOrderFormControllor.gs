@@ -1,57 +1,85 @@
+// REPLACE ALL getActiveSpreadsheet() with openById
+const MAIN_SPREADSHEET_ID = "1O_PDJL5AVMlf922tkBVeDKwJXu7_-zI74D5W8-GbvVI";
+
+// Get data for populating dropdowns
+function getVendors() {
+  try {
+    const sheet = SpreadsheetApp.openById(MAIN_SPREADSHEET_ID).getSheetByName("Vendors");
+    const data = sheet.getDataRange().getValues();
+    const vendors = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const name = data[i][0]; // Column A
+      if (name) vendors.push([name]); // Return only the name
+    }
+
+    return vendors;
+  } catch (e) {
+    Logger.log("Error in getVendors(): " + e.toString());
+    return [];
+  }
+}
+
+
+function getMaterialList() {
+  const sheet = SpreadsheetApp.openById("1O_PDJL5AVMlf922tkBVeDKwJXu7_-zI74D5W8-GbvVI").getSheetByName("Products");
+  return sheet.getDataRange().getValues().slice(1); // Skip header
+}
+
+
+function getProjects() {
+  const sheet = SpreadsheetApp.openById(MAIN_SPREADSHEET_ID).getSheetByName("Projects");
+  const data = sheet.getDataRange().getValues();
+  return data.slice(1);
+}
+
+// Handle form submission
+function submitMaterialOrder(data) {
+  const sheet = SpreadsheetApp.openById(MAIN_SPREADSHEET_ID).getSheetByName("Material Orders");
+  sheet.appendRow([
+    new Date(),
+    data.project,
+    data.vendor,
+    data.material,
+    data.quantity,
+    data.unit,
+    data.neededBy,
+    data.requestedBy,
+    data.notes
+  ]);
+  return true;
+}
+
+// Fetch existing orders (if needed)
+function getMaterialOrders() {
+  const sheet = SpreadsheetApp.openById(MAIN_SPREADSHEET_ID).getSheetByName("Material Orders");
+  const data = sheet.getDataRange().getValues();
+  return data.slice(1); // Skip header
+}
+
 function getMaterialOrderFormHtml() {
   try {
     var template = HtmlService.createTemplateFromFile('MaterialOrderForm');
     
-    // Get comprehensive data for dropdowns with error handling
-    try {
-      template.vendors = getVendors();
-    } catch (e) {
-      Logger.log("Error getting vendors: " + e);
-      template.vendors = [];
-    }
+    // Inject your dynamic dropdown data here
+    template.vendors = getVendors();
+    template.products = getProducts();
+    template.jobs = getJobsWithContacts();
+    template.sundries = getSundries();
+    template.categories = getProductCategories();
+    template.sheenTypes = getSheenTypes();
     
-    try {
-      template.products = getProducts();
-    } catch (e) {
-      Logger.log("Error getting products: " + e);
-      template.products = [];
-    }
-    
-    try {
-      template.jobs = getJobsWithContacts();
-    } catch (e) {
-      Logger.log("Error getting jobs: " + e);
-      template.jobs = [];
-    }
-    
-    try {
-      template.sundries = getSundries();
-    } catch (e) {
-      Logger.log("Error getting sundries: " + e);
-      template.sundries = [];
-    }
-    
-    try {
-      template.categories = getProductCategories();
-    } catch (e) {
-      Logger.log("Error getting categories: " + e);
-      template.categories = [];
-    }
-    
-    // Add sheen types
-    try {
-      template.sheenTypes = getSheenTypes();
-    } catch (e) {
-      Logger.log("Error getting sheen types: " + e);
-      template.sheenTypes = [];
-    }
-    
-    return template.evaluate().getContent();
+    return template.evaluate()
+      .setTitle("Material Order Form")
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   } catch (e) {
     Logger.log("Error in getMaterialOrderFormHtml: " + e);
-    return "<div class='error-message'>Error loading form: " + e.toString() + "</div>";
+    return HtmlService.createHtmlOutput("<p>Error loading form: " + e.toString() + "</p>");
   }
 }
+
 // Get jobs with PM and Super information
 function getJobsWithContacts() {
   try {

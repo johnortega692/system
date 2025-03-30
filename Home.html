@@ -1,8 +1,10 @@
+<!-- Home.html -->
 <div class="home-content">
   <div class="welcome-section">
-    <h2>Welcome, <?= userData.firstName || 'User' ?> <?= userData.lastName || '' ?></h2>
+    <h2>Welcome, <?= userData.firstName ?> <?= userData.lastName ?></h2>
     <p>Select a module below to get started:</p>
   </div>
+
   
   <div class="modules-grid">
     <? var modules = userData.modules || []; ?>

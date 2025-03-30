@@ -1,0 +1,390 @@
+  // Store all equipment data
+  var allEquipment = <?= JSON.stringify(equipment) ?>;
+  var allJobs = <?= JSON.stringify(jobs) ?>;
+  var filteredEquipment = [];
+  var itemCount = 1;
+  
+  // Initialize form when loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates
+    var tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('startDate').value = tomorrow.toISOString().split('T')[0];
+    
+    var nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    document.getElementById('endDate').value = nextWeek.toISOString().split('T')[0];
+    
+    updateDuration();
+      // Initialize delivery fields based on selected option
+  toggleDeliveryAddress();
+    // Add event listeners
+    document.getElementById('wallcovering-order-form').addEventListener('submit', submitOrder);
+    document.getElementById('vendorId').addEventListener('change', filterEquipmentByVendor);
+    document.getElementById('jobId').addEventListener('input', showJobDetails);
+    document.getElementById('startDate').addEventListener('change', updateDuration);
+    document.getElementById('endDate').addEventListener('change', updateDuration);
+      document.getElementById('jobId').addEventListener('input', searchJobs);
+  document.getElementById('deliveryType').addEventListener('change', toggleDeliveryAddress);
+  
+    
+    // Initialize first equipment dropdown
+    filterEquipmentByVendor();
+  });
+  
+  // Filter equipment based on vendor selection
+  function filterEquipmentByVendor() {
+    var vendorId = document.getElementById('vendorId').value;
+    filteredEquipment = allEquipment.filter(function(equipment) {
+      return vendorId === '' || equipment.vendorId === vendorId;
+    });
+    
+    // Update all equipment dropdowns
+    var equipmentDropdowns = document.getElementsByClassName('equipment-select');
+    for (var i = 0; i < equipmentDropdowns.length; i++) {
+      updateEquipmentDropdown(equipmentDropdowns[i]);
+    }
+  }
+  
+  // Update a specific equipment dropdown with filtered equipment
+  function updateEquipmentDropdown(dropdown) {
+    var selectedValue = dropdown.value;
+    
+    // Clear existing options except the first one
+    while (dropdown.options.length > 1) {
+      dropdown.remove(1);
+    }
+    
+    // Add filtered equipment
+    for (var i = 0; i < filteredEquipment.length; i++) {
+      var option = document.createElement('option');
+      option.value = filteredEquipment[i].id;
+      option.text = filteredEquipment[i].name + ' - $' + filteredEquipment[i].dailyRate.toFixed(2) + '/day';
+      dropdown.add(option);
+    }
+    
+    // Restore selected value if possible
+    if (selectedValue && Array.from(dropdown.options).some(opt => opt.value === selectedValue)) {
+      dropdown.value = selectedValue;
+    }
+  }
+  
+  // Show job details when job is selected
+  function showJobDetails() {
+    var jobId = document.getElementById('jobId').value;
+    var jobDetailsDiv = document.querySelector('.job-details');
+    var jobDetailContent = document.getElementById('job-detail-content');
+    
+    if (jobId) {
+      var job = allJobs.find(function(j) {
+        return j.id === jobId;
+      });
+      
+      if (job) {
+        jobDetailContent.innerHTML = '<p><strong>Name:</strong> ' + job.name + '</p>' +
+                                   '<p><strong>Address:</strong> ' + job.address + '</p>' +
+                                   '<p><strong>Client:</strong> ' + job.clientName + '</p>';
+        jobDetailsDiv.style.display = 'block';
+      } else {
+        jobDetailsDiv.style.display = 'none';
+      }
+    } else {
+      jobDetailsDiv.style.display = 'none';
+    }
+  }
+  
+  // Update duration display
+  function updateDuration() {
+    var startDate = document.getElementById('startDate').value;
+    var endDate = document.getElementById('endDate').value;
+    
+    if (startDate && endDate) {
+      var start = new Date(startDate);
+      var end = new Date(endDate);
+      
+      // Add 1 to include both start and end days
+      var days = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      if (days < 1) days = 1;
+      
+      document.getElementById('duration-display').textContent = days + ' day' + (days !== 1 ? 's' : '');
+    } else {
+      document.getElementById('duration-display').textContent = '0 days';
+    }
+  }
+  
+  // Toggle delivery address based on delivery type
+  function toggleDeliveryAddress() {
+    var deliveryType = document.getElementById('deliveryType').value;
+    var addressGroup = document.getElementById('delivery-address-group');
+    
+    if (deliveryType === 'Delivery') {
+      addressGroup.style.display = 'block';
+      document.getElementById('deliveryAddress').setAttribute('required', '');
+    } else {
+      addressGroup.style.display = 'none';
+      document.getElementById('deliveryAddress').removeAttribute('required');
+    }
+  }
+  
+  // Add a new item row
+  function addItem() {
+    var container = document.getElementById('items-container');
+    var newRow = document.createElement('div');
+    newRow.className = 'item-row';
+    newRow.setAttribute('data-index', itemCount);
+    
+    newRow.innerHTML = `
+      <div class="form-group">
+        <label for="equipmentId-${itemCount}">Equipment:</label>
+        <select id="equipmentId-${itemCount}" name="items[${itemCount}].equipmentId" required class="equipment-select" data-index="${itemCount}">
+          <option value="">-- Select Equipment --</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="quantity-${itemCount}">Quantity:</label>
+        <input type="number" id="quantity-${itemCount}" name="items[${itemCount}].quantity" required min="1" value="1">
+      </div>
+      
+      <div class="form-group">
+        <label for="notes-${itemCount}">Notes:</label>
+        <input type="text" id="notes-${itemCount}" name="items[${itemCount}].notes">
+      </div>
+      
+      <button type="button" class="btn btn-danger remove-item" data-index="${itemCount}" onclick="removeItem(${itemCount})">Remove</button>
+    `;
+    
+    container.appendChild(newRow);
+    
+    // Initialize the new equipment dropdown
+    var dropdown = document.getElementById(`equipmentId-${itemCount}`);
+    updateEquipmentDropdown(dropdown);
+    
+    itemCount++;
+  }
+  
+  // Remove an item row
+  function removeItem(index) {
+    var row = document.querySelector(`.item-row[data-index="${index}"]`);
+    if (row) {
+      row.parentNode.removeChild(row);
+    }
+  }
+  
+  // Submit the form
+  function submitOrder(e) {
+    e.preventDefault();
+    
+    // Show loading
+    window.parent.showLoading();
+    
+    // Get form data
+    var formData = {
+      jobId: document.getElementById('jobId').value,
+      vendorId: document.getElementById('vendorId').value,
+      deliveryType: document.getElementById('deliveryType').value,
+      deliveryAddress: document.getElementById('deliveryAddress').value,
+      startDate: document.getElementById('startDate').value,
+      endDate: document.getElementById('endDate').value,
+      notes: document.getElementById('notes').value,
+      items: []
+    };
+    
+    // Validate dates
+    var startDate = new Date(formData.startDate);
+    var endDate = new Date(formData.endDate);
+    if (endDate < startDate) {
+      window.parent.hideLoading();
+      var errorDiv = document.getElementById('form-error');
+      errorDiv.textContent = "End date cannot be before start date.";
+      errorDiv.style.display = 'block';
+      return;
+    }
+    
+    // Collect items
+    var itemRows = document.querySelectorAll('.item-row');
+    for (var i = 0; i < itemRows.length; i++) {
+      var index = itemRows[i].getAttribute('data-index');
+      var equipmentId = document.getElementById(`equipmentId-${index}`).value;
+      var quantity = document.getElementById(`quantity-${index}`).value;
+      var notes = document.getElementById(`notes-${index}`).value;
+      
+      if (equipmentId && quantity) {
+        formData.items.push({
+          equipmentId: equipmentId,
+          quantity: parseInt(quantity),
+          notes: notes
+        });
+      }
+    }
+    
+    // Submit to server
+    google.script.run
+      .withSuccessHandler(function(result) {
+        window.parent.hideLoading();
+        
+        if (result.success) {
+          // Show success message
+          var successDiv = document.getElementById('form-success');
+          successDiv.textContent = result.message;
+          successDiv.style.display = 'block';
+          
+          // Hide error message if visible
+          document.getElementById('form-error').style.display = 'none';
+          
+          // Reset form
+          document.getElementById('wallcovering-order-form').reset();
+          
+          // Provide link to PDF
+          if (result.pdfUrl) {
+            successDiv.innerHTML += '<br><a href="' + result.pdfUrl + '" target="_blank">View Order PDF</a>';
+          }
+          
+          // Reset form state
+          resetForm();
+        } else {
+          // Show error message
+          var errorDiv = document.getElementById('form-error');
+          errorDiv.textContent = result.message;
+          errorDiv.style.display = 'block';
+          
+          // Hide success message if visible
+          document.getElementById('form-success').style.display = 'none';
+        }
+      })
+      .withFailureHandler(function(error) {
+        window.parent.hideLoading();
+        
+        // Show error message
+        var errorDiv = document.getElementById('form-error');
+        errorDiv.textContent = "Error: " + error.toString();
+        errorDiv.style.display = 'block';
+        
+        // Hide success message if visible
+        document.getElementById('form-success').style.display = 'none';
+      })
+      .submitWallcoveringOrder(formData);
+  }
+  
+  // Reset form to initial state
+  function resetForm() {
+    // Set default dates
+    var tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('startDate').value = tomorrow.toISOString().split('T')[0];
+    
+    var nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    document.getElementById('endDate').value = nextWeek.toISOString().split('T')[0];
+    
+    updateDuration();
+    
+    // Clear all items except the first one
+    var container = document.getElementById('items-container');
+    var itemRows = document.querySelectorAll('.item-row');
+    
+    for (var i = itemRows.length - 1; i > 0; i--) {
+      container.removeChild(itemRows[i]);
+    }
+    
+    // Reset first item
+    document.getElementById('equipmentId-0').value = '';
+    document.getElementById('quantity-0').value = '1';
+    document.getElementById('notes-0').value = '';
+    
+    // Reset item counter
+    itemCount = 1;
+    
+    // Hide job details
+    document.querySelector('.job-details').style.display = 'none';
+    
+    // Reset delivery address display
+    toggleDeliveryAddress();
+  }
+  
+  // Return to home screen
+  function returnToHome() {
+    window.parent.loadModule('Home');
+  }
+function searchJobs() {
+  var searchTerm = document.getElementById('jobId').value.toLowerCase();
+  var resultsContainer = document.getElementById('job-search-results');
+  
+  if (searchTerm.length < 2) {
+    resultsContainer.style.display = 'none';
+    return;
+  }
+  
+  var matchingJobs = allJobs.filter(function(job) {
+    return job.id.toLowerCase().includes(searchTerm);
+  });
+  
+  if (matchingJobs.length === 0) {
+    resultsContainer.style.display = 'none';
+    return;
+  }
+  
+  // Clear previous results
+  resultsContainer.innerHTML = '';
+  
+  // Add matching jobs to results
+  matchingJobs.slice(0, 5).forEach(function(job) {
+    var jobElement = document.createElement('div');
+    jobElement.className = 'search-result-item';
+    jobElement.textContent = job.id;
+    jobElement.onclick = function() {
+      document.getElementById('jobId').value = job.id;
+      document.getElementById('jobAddress').value = job.address || '';
+      resultsContainer.style.display = 'none';
+      showJobDetails(job.id);
+    };
+    resultsContainer.appendChild(jobElement);
+  });
+  
+  resultsContainer.style.display = 'block';
+}
+
+function showJobDetails(jobId) {
+  var jobDetailsDiv = document.querySelector('.job-details');
+  var jobDetailContent = document.getElementById('job-detail-content');
+  
+  if (!jobId) {
+    jobId = document.getElementById('jobId').value;
+  }
+  
+  if (jobId) {
+    var job = allJobs.find(function(j) {
+      return j.id === jobId;
+    });
+    
+    if (job) {
+      jobDetailContent.innerHTML = '<p><strong>Job:</strong> ' + job.id + '</p>' +
+                               '<p><strong>PM:</strong> ' + job.pm.name + ' (' + job.pm.email + ')</p>' +
+                               '<p><strong>Super:</strong> ' + job.super.name + ' (' + job.super.email + ')</p>';
+      jobDetailsDiv.style.display = 'block';
+      
+      // Set the job address
+      document.getElementById('jobAddress').value = job.address || '';
+    } else {
+      jobDetailsDiv.style.display = 'none';
+    }
+  } else {
+    jobDetailsDiv.style.display = 'none';
+  }
+}
+
+function toggleDeliveryAddress() {
+  var deliveryType = document.getElementById('deliveryType').value;
+  var deliveryFields = document.getElementById('delivery-fields');
+  var willcallFields = document.getElementById('willcall-fields');
+  
+  if (deliveryType === 'Delivery') {
+    deliveryFields.style.display = 'block';
+    willcallFields.style.display = 'none';
+    document.getElementById('deliveryAddress').setAttribute('required', '');
+  } else {
+    deliveryFields.style.display = 'none';
+    willcallFields.style.display = 'block';
+    document.getElementById('deliveryAddress').removeAttribute('required');
+  }
+}

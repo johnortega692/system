@@ -1,0 +1,907 @@
+<div class="material-order-form">
+  <div class="form-header">
+    <h2>Material Order Form</h2>
+    <button onclick="returnToHome()" class="btn btn-secondary">Back to Home</button>
+  </div>
+  
+  <div id="form-error" class="error-message" style="display:none;"></div>
+  <div id="form-success" class="success-message" style="display:none;"></div>
+  
+  <form id="material-order-form">
+    <div class="form-section">
+      <h3>Job Information</h3>
+      
+<div class="form-group">
+  <label for="jobId">Job Number:</label>
+  <div class="search-container">
+    <input type="text" id="jobId" name="jobId" required autocomplete="off">
+    <div id="job-search-results" class="search-results" style="display:none;"></div>
+  </div>
+</div>
+
+<div class="form-group job-details" style="display:none;">
+  <label>Job Details:</label>
+  <div id="job-detail-content"></div>
+</div>
+
+<div class="form-group">
+  <label for="jobAddress">Job Address:</label>
+  <textarea id="jobAddress" name="jobAddress" rows="2" readonly></textarea>
+</div>
+<div class="form-section">
+  <h3>Delivery Information</h3>
+  
+  <div class="form-group">
+    <label for="deliveryType">Delivery Type:</label>
+    <select id="deliveryType" name="deliveryType" required>
+      <option value="Will Call">Will Call</option>
+      <option value="Delivery">Delivery</option>
+    </select>
+  </div>
+  
+  <!-- Delivery-specific fields -->
+  <div id="delivery-fields" style="display:none;">
+    <div class="form-group">
+      <label for="deliveryAddress">Delivery Address:</label>
+      <textarea id="deliveryAddress" name="deliveryAddress" rows="3"></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label for="deliveryTimeFrame">Delivery Time Frame:</label>
+      <select id="deliveryTimeFrame" name="deliveryTimeFrame">
+        <option value="Morning (8am-12pm)">Morning (8am-12pm)</option>
+        <option value="Afternoon (12pm-5pm)">Afternoon (12pm-5pm)</option>
+        <option value="Any Time">Any Time</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="deliveryNotes">Additional Notes:</label>
+      <textarea id="deliveryNotes" name="deliveryNotes" rows="2"></textarea>
+    </div>
+  </div>
+  
+  <!-- Will Call-specific fields -->
+  <div id="willcall-fields" style="display:none;">
+    <div class="form-group">
+      <label for="storeLocation">Store Location:</label>
+      <select id="storeLocation" name="storeLocation">
+        <option value="Main Store">Main Store</option>
+        <option value="Downtown Branch">Downtown Branch</option>
+        <option value="North Side Location">North Side Location</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="pickupTime">Pickup Time:</label>
+      <input type="time" id="pickupTime" name="pickupTime">
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label for="requestedDate">Requested Date:</label>
+    <input type="date" id="requestedDate" name="requestedDate" required>
+  </div>
+</div>
+    <div class="form-section">
+      <h3>Order Items</h3>
+      
+      <div class="tabs">
+        <div class="tab-buttons">
+          <button type="button" class="tab-button active" data-tab="paint">Paint</button>
+          <button type="button" class="tab-button" data-tab="sundries">Sundries</button>
+          <button type="button" class="tab-button" data-tab="custom">Custom Package</button>
+        </div>
+        
+        <div class="tab-content">
+          <!-- Paint Tab -->
+<!-- In the Paint Tab section of MaterialOrderForm.html -->
+<div class="tab-pane active" id="paint-tab">
+  <div class="form-group">
+    <label for="paintVendor">Paint Vendor:</label>
+    <select id="paintVendor">
+      <option value="">-- Select Vendor --</option>
+      <? for (var i = 0; i < vendors.length; i++) { ?>
+        <option value="<?= vendors[i].id ?>"><?= vendors[i].name ?></option>
+      <? } ?>
+    </select>
+  </div>
+  
+  <div class="form-group">
+    <label for="paintType">Paint Type:</label>
+    <select id="paintType">
+      <option value="">-- All Types --</option>
+      <? for (var i = 0; i < categories.length; i++) { ?>
+        <option value="<?= categories[i] ?>"><?= categories[i] ?></option>
+      <? } ?>
+    </select>
+  </div>
+  
+  <!-- Add Sheen Selection -->
+  <div class="form-group">
+    <label for="paintSheen">Paint Sheen:</label>
+    <select id="paintSheen">
+      <option value="">-- All Sheens --</option>
+      <? for (var i = 0; i < sheenTypes.length; i++) { ?>
+        <option value="<?= sheenTypes[i] ?>"><?= sheenTypes[i] ?></option>
+      <? } ?>
+    </select>
+  </div>
+  
+  <div id="paint-products-container" class="products-grid">
+    <!-- Paint products will be loaded here -->
+  </div>
+</div>
+          
+          <!-- Sundries Tab -->
+          <div class="tab-pane" id="sundries-tab">
+            <div class="form-group">
+              <label for="sundriesCategory">Category:</label>
+              <select id="sundriesCategory">
+                <option value="">-- All Categories --</option>
+                <option value="Masking">Masking</option>
+                <option value="Sanding">Sanding</option>
+                <option value="Patching/Caulking">Patching/Caulking</option>
+              </select>
+            </div>
+            
+            <div id="sundries-container" class="products-grid">
+              <!-- Sundries will be loaded here -->
+            </div>
+          </div>
+          
+          <!-- Custom Package Tab -->
+          <div class="tab-pane" id="custom-tab">
+            <div id="package-items">
+              <!-- Package items will be added here -->
+              <div class="package-item">
+                <div class="form-group">
+                  <label for="package-product-0">Product:</label>
+                  <select id="package-product-0" class="package-product" required>
+                    <option value="">-- Select Product --</option>
+                  </select>
+                </div>
+                
+                <div class="form-group">
+                  <label for="package-quantity-0">Quantity:</label>
+                  <input type="number" id="package-quantity-0" class="package-quantity" required min="1" value="1">
+                </div>
+                
+                <button type="button" class="btn btn-danger remove-package-item">Remove</button>
+              </div>
+            </div>
+            
+            <button type="button" class="btn btn-secondary" onclick="addPackageItem()">Add Item</button>
+          </div>
+        </div>
+      </div>
+      
+      <h4>Selected Items</h4>
+      <div id="selected-items-container">
+        <table class="selected-items-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Quantity</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="selected-items-body">
+            <!-- No items message -->
+            <tr id="no-items-row">
+              <td colspan="4" class="text-center">No items selected</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div class="form-section">
+      <h3>Additional Information</h3>
+      
+      <div class="form-group">
+        <label for="notes">Order Notes:</label>
+        <textarea id="notes" name="notes" rows="3"></textarea>
+      </div>
+    </div>
+    
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Submit Order</button>
+      <button type="button" class="btn btn-secondary" onclick="returnToHome()">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Store all products and sundries data
+  var allProducts = <?= JSON.stringify(products) ?>;
+  var allSundries = <?= JSON.stringify(sundries) ?>;
+  var allJobs = <?= JSON.stringify(jobs) ?>;
+  var selectedItems = [];
+  
+  // Initialize form when loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log("Form initializing...");
+    console.log("Products:", allProducts);
+    console.log("Sundries:", allSundries);
+    console.log("Jobs:", allJobs);
+    
+    // Set default requested date to tomorrow
+    var tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('requestedDate').value = tomorrow.toISOString().split('T')[0];
+    
+    // Add event listeners for form elements
+    document.getElementById('material-order-form').addEventListener('submit', submitOrder);
+    
+    // Add event listeners for selects that had onchange attributes
+    var paintVendor = document.getElementById('paintVendor');
+    if (paintVendor) paintVendor.addEventListener('change', filterPaintProducts);
+    
+    var paintType = document.getElementById('paintType');
+    if (paintType) paintType.addEventListener('change', filterPaintProducts);
+    
+    var paintSheen = document.getElementById('paintSheen');
+    if (paintSheen) paintSheen.addEventListener('change', filterPaintProducts);
+    
+    var sundriesCategory = document.getElementById('sundriesCategory');
+    if (sundriesCategory) sundriesCategory.addEventListener('change', filterSundries);
+    
+    var deliveryType = document.getElementById('deliveryType');
+    if (deliveryType) deliveryType.addEventListener('change', toggleDeliveryAddress);
+    
+    var jobId = document.getElementById('jobId');
+    if (jobId) jobId.addEventListener('input', searchJobs);
+    
+    // Add event listeners for buttons that had onclick attributes
+    var addPackageBtn = document.querySelector('button[onclick="addPackageItem()"]');
+    if (addPackageBtn) {
+      addPackageBtn.removeAttribute('onclick');
+      addPackageBtn.addEventListener('click', addPackageItem);
+    }
+    
+    var returnToHomeBtn = document.querySelector('button[onclick="returnToHome()"]');
+    if (returnToHomeBtn) {
+      returnToHomeBtn.removeAttribute('onclick');
+      returnToHomeBtn.addEventListener('click', returnToHome);
+    }
+    
+    var cancelBtn = document.querySelector('button.btn-secondary[onclick="returnToHome()"]');
+    if (cancelBtn) {
+      cancelBtn.removeAttribute('onclick');
+      cancelBtn.addEventListener('click', returnToHome);
+    }
+    
+    // Initialize tabs
+    initializeTabs();
+    
+    // Display initial products
+    try {
+      filterPaintProducts();
+      filterSundries();
+    } catch (e) {
+      console.error("Error initializing products or sundries:", e);
+    }
+  });
+  
+  // Initialize tab functionality
+  function initializeTabs() {
+    var tabButtons = document.querySelectorAll('.tab-button');
+    
+    tabButtons.forEach(function(button) {
+      button.addEventListener('click', function() {
+        // Remove active class from all buttons and panes
+        document.querySelectorAll('.tab-button').forEach(function(btn) {
+          btn.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-pane').forEach(function(pane) {
+          pane.classList.remove('active');
+        });
+        
+        // Add active class to clicked button and corresponding pane
+        this.classList.add('active');
+        var tabId = this.getAttribute('data-tab') + '-tab';
+        document.getElementById(tabId).classList.add('active');
+      });
+    });
+  }
+  
+  // Search jobs as user types
+  function searchJobs() {
+    var searchTerm = document.getElementById('jobId').value.toLowerCase();
+    var resultsContainer = document.getElementById('job-search-results');
+    
+    if (searchTerm.length < 2) {
+      resultsContainer.style.display = 'none';
+      return;
+    }
+    
+    var matchingJobs = allJobs.filter(function(job) {
+      return job.id.toLowerCase().includes(searchTerm);
+    });
+    
+    if (matchingJobs.length === 0) {
+      resultsContainer.style.display = 'none';
+      return;
+    }
+    
+    // Clear previous results
+    resultsContainer.innerHTML = '';
+    
+    // Add matching jobs to results
+    matchingJobs.slice(0, 5).forEach(function(job) {
+      var jobElement = document.createElement('div');
+      jobElement.className = 'search-result-item';
+      jobElement.textContent = job.id;
+      jobElement.onclick = function() {
+        document.getElementById('jobId').value = job.id;
+        resultsContainer.style.display = 'none';
+        showJobDetails(job.id);
+      };
+      resultsContainer.appendChild(jobElement);
+    });
+    
+    resultsContainer.style.display = 'block';
+  }
+  
+  // Show job details when job is selected
+  function showJobDetails(jobId) {
+    var jobDetailsDiv = document.querySelector('.job-details');
+    var jobDetailContent = document.getElementById('job-detail-content');
+    
+    if (!jobId) {
+      jobId = document.getElementById('jobId').value;
+    }
+    
+    if (jobId) {
+      var job = allJobs.find(function(j) {
+        return j.id === jobId;
+      });
+      
+      if (job) {
+        jobDetailContent.innerHTML = '<p><strong>Job:</strong> ' + job.id + '</p>' +
+                                   '<p><strong>PM:</strong> ' + job.pm.name + ' (' + job.pm.email + ')</p>' +
+                                   '<p><strong>Super:</strong> ' + job.super.name + ' (' + job.super.email + ')</p>';
+        jobDetailsDiv.style.display = 'block';
+      } else {
+        jobDetailsDiv.style.display = 'none';
+      }
+    } else {
+      jobDetailsDiv.style.display = 'none';
+    }
+  }
+  
+  // Filter paint products based on vendor, type and sheen
+function filterPaintProducts() {
+  try {
+    var vendorId = document.getElementById('paintVendor').value;
+    var paintType = document.getElementById('paintType').value;
+    var paintSheen = document.getElementById('paintSheen').value;
+    var container = document.getElementById('paint-products-container');
+    
+    // Check if allProducts exists
+    if (!allProducts || !Array.isArray(allProducts)) {
+      console.error("Products data is not available or not an array:", allProducts);
+      container.innerHTML = '<p class="no-results">Products data not available</p>';
+      return;
+    }
+    
+    var filteredProducts = allProducts.filter(function(product) {
+      return (vendorId === '' || product.vendorId === vendorId) && 
+             (paintType === '' || product.category === paintType) &&
+             (paintSheen === '' || (product.sheen && product.sheen === paintSheen));
+    });
+    
+    // Clear container
+    container.innerHTML = '';
+    
+    if (filteredProducts.length === 0) {
+      container.innerHTML = '<p class="no-results">No products match your selection</p>';
+      return;
+    }
+    
+    // Display products in grid
+    filteredProducts.forEach(function(product) {
+      var productCard = document.createElement('div');
+      productCard.className = 'product-card';
+      
+      var sheenText = product.sheen ? ` - ${product.sheen}` : '';
+      productCard.innerHTML = `
+        <h4>${product.name}${sheenText}</h4>
+        <p class="product-category">${product.category}</p>
+        <div class="product-actions">
+          <input type="number" min="1" value="1" class="product-quantity">
+          <button type="button" class="btn btn-primary add-product">Add</button>
+        </div>
+      `;
+      
+      // Add event listener to "Add" button
+      productCard.querySelector('.add-product').addEventListener('click', function() {
+        var quantity = parseInt(productCard.querySelector('.product-quantity').value);
+        addItemToSelection(product, quantity);
+      });
+      
+      container.appendChild(productCard);
+    });
+  } catch (e) {
+    console.error("Error in filterPaintProducts:", e);
+  }
+}
+    
+  function returnToHome() {
+    // Return to the home screen
+    window.parent.loadModule('Home');
+  }
+  
+  // Filter sundries based on category
+  function filterSundries() {
+    try {
+      var category = document.getElementById('sundriesCategory').value;
+      var container = document.getElementById('sundries-container');
+      
+      // Check if allSundries exists
+      if (!allSundries || !Array.isArray(allSundries)) {
+        console.error("Sundries data is not available or not an array:", allSundries);
+        container.innerHTML = '<p class="no-results">Sundries data not available</p>';
+        return;
+      }
+      
+      var filteredSundries = allSundries.filter(function(item) {
+        return category === '' || item.category === category;
+      });
+      
+      // Clear container
+      container.innerHTML = '';
+      
+      if (filteredSundries.length === 0) {
+        container.innerHTML = '<p class="no-results">No sundries match your selection</p>';
+        return;
+      }
+      
+      // Display sundries in grid
+      filteredSundries.forEach(function(item) {
+        var itemCard = document.createElement('div');
+        itemCard.className = 'product-card';
+        
+        itemCard.innerHTML = `
+          <h4>${item.name}</h4>
+          <p class="product-category">${item.category}</p>
+          <div class="product-actions">
+            <input type="number" min="1" value="1" class="product-quantity">
+            <button type="button" class="btn btn-primary add-product">Add</button>
+          </div>
+        `;
+        
+        // Add event listener to "Add" button
+        itemCard.querySelector('.add-product').addEventListener('click', function() {
+          var quantity = parseInt(itemCard.querySelector('.product-quantity').value);
+          addItemToSelection(item, quantity);
+        });
+        
+        container.appendChild(itemCard);
+      });
+    } catch (e) {
+      console.error("Error in filterSundries:", e);
+    }
+  }
+  
+  // Add an item to the selected items list
+  function addItemToSelection(item, quantity, notes = '') {
+    // Check if already in selection
+    var existingIndex = selectedItems.findIndex(function(selected) {
+      return selected.item.id === item.id;
+    });
+    
+    if (existingIndex !== -1) {
+      // Update quantity if already exists
+      selectedItems[existingIndex].quantity += quantity;
+    } else {
+      // Add new item
+      selectedItems.push({
+        item: item,
+        quantity: quantity,
+        notes: notes
+      });
+    }
+    
+    // Update the selected items display
+    updateSelectedItemsDisplay();
+  }
+  
+  // Update the selected items table
+  function updateSelectedItemsDisplay() {
+    var tbody = document.getElementById('selected-items-body');
+    var noItemsRow = document.getElementById('no-items-row');
+    
+    // Clear table except for the "no items" row
+    while (tbody.firstChild && tbody.firstChild !== noItemsRow) {
+      tbody.removeChild(tbody.firstChild);
+    }
+    
+    if (selectedItems.length === 0) {
+      noItemsRow.style.display = '';
+      return;
+    }
+    
+    // Hide "no items" row
+    noItemsRow.style.display = 'none';
+    
+    // Add each selected item to the table
+    selectedItems.forEach(function(selected, index) {
+      var row = document.createElement('tr');
+      
+      row.innerHTML = `
+        <td>${selected.item.name}</td>
+        <td>
+          <input type="number" min="1" value="${selected.quantity}" class="item-quantity" data-index="${index}">
+        </td>
+        <td>
+          <input type="text" value="${selected.notes}" class="item-notes" data-index="${index}">
+        </td>
+        <td>
+          <button type="button" class="btn btn-danger remove-item" data-index="${index}">Remove</button>
+        </td>
+      `;
+      
+      // Add event listeners
+      row.querySelector('.item-quantity').addEventListener('change', function() {
+        selectedItems[index].quantity = parseInt(this.value);
+      });
+      
+      row.querySelector('.item-notes').addEventListener('change', function() {
+        selectedItems[index].notes = this.value;
+      });
+      
+      row.querySelector('.remove-item').addEventListener('click', function() {
+        selectedItems.splice(index, 1);
+        updateSelectedItemsDisplay();
+      });
+      
+      tbody.insertBefore(row, noItemsRow);
+    });
+  }
+  
+  // Add a package item input
+  function addPackageItem() {
+    var container = document.getElementById('package-items');
+    var itemCount = container.children.length;
+    
+    var itemDiv = document.createElement('div');
+    itemDiv.className = 'package-item';
+    
+    itemDiv.innerHTML = `
+      <div class="form-group">
+        <label for="package-product-${itemCount}">Product:</label>
+        <select id="package-product-${itemCount}" class="package-product" required>
+          <option value="">-- Select Product --</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="package-quantity-${itemCount}">Quantity:</label>
+        <input type="number" id="package-quantity-${itemCount}" class="package-quantity" required min="1" value="1">
+      </div>
+      
+      <button type="button" class="btn btn-danger remove-package-item">Remove</button>
+    `;
+    
+    // Add all products to dropdown
+    var select = itemDiv.querySelector(`#package-product-${itemCount}`);
+    
+    // Add paint products
+    var paintOptgroup = document.createElement('optgroup');
+    paintOptgroup.label = 'Paint Products';
+    
+    allProducts.forEach(function(product) {
+      var option = document.createElement('option');
+      option.value = 'paint_' + product.id;
+      option.text = product.name;
+      paintOptgroup.appendChild(option);
+    });
+    
+    select.appendChild(paintOptgroup);
+    
+    // Add sundries
+    var sundriesOptgroup = document.createElement('optgroup');
+    sundriesOptgroup.label = 'Sundries';
+    
+    allSundries.forEach(function(item) {
+      var option = document.createElement('option');
+      option.value = 'sundry_' + item.id;
+      option.text = item.name;
+      sundriesOptgroup.appendChild(option);
+    });
+    
+    select.appendChild(sundriesOptgroup);
+    
+    // Add remove event listener
+    itemDiv.querySelector('.remove-package-item').addEventListener('click', function() {
+      container.removeChild(itemDiv);
+    });
+    
+    container.appendChild(itemDiv);
+  }
+  
+  // Submit the form
+  function submitOrder(e) {
+    e.preventDefault();
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
+    // Show loading
+    window.parent.showLoading();
+    
+    // Prepare form data
+    var formData = {
+      jobId: document.getElementById('jobId').value,
+      deliveryType: document.getElementById('deliveryType').value,
+      deliveryAddress: document.getElementById('deliveryAddress').value,
+      requestedDate: document.getElementById('requestedDate').value,
+      notes: document.getElementById('notes').value,
+      items: selectedItems.map(function(selected) {
+        return {
+          productId: selected.item.id,
+          productName: selected.item.name,
+          productCategory: selected.item.category,
+          quantity: selected.quantity,
+          notes: selected.notes
+        };
+      })
+    };
+    
+    // Get job contacts
+    var job = allJobs.find(function(j) {
+      return j.id === formData.jobId;
+    });
+    
+    if (job) {
+      formData.pmName = job.pm.name;
+      formData.pmEmail = job.pm.email;
+      formData.superName = job.super.name;
+      formData.superEmail = job.super.email;
+    }
+    
+    // Submit to server
+    google.script.run
+      .withSuccessHandler(function(result) {
+        window.parent.hideLoading();
+        
+        if (result.success) {
+          // Show success message
+          var successDiv = document.getElementById('form-success');
+          successDiv.textContent = result.message;
+          successDiv.style.display = 'block';
+          
+          // Hide error message if visible
+          document.getElementById('form-error').style.display = 'none';
+          
+          // Provide link to PDF
+          if (result.pdfUrl) {
+            successDiv.innerHTML += '<br><a href="' + result.pdfUrl + '" target="_blank">View Order PDF</a>';
+          }
+          
+          // Reset form
+          document.getElementById('material-order-form').reset();
+          selectedItems = [];
+          updateSelectedItemsDisplay();
+          
+          // Hide job details
+          document.querySelector('.job-details').style.display = 'none';
+        } else {
+          // Show error message
+          var errorDiv = document.getElementById('form-error');
+          errorDiv.textContent = result.message;
+          errorDiv.style.display = 'block';
+          
+          // Hide success message if visible
+          document.getElementById('form-success').style.display = 'none';
+        }
+      })
+      .withFailureHandler(function(error) {
+        window.parent.hideLoading();
+        
+        // Show error message
+        var errorDiv = document.getElementById('form-error');
+        errorDiv.textContent = "Error: " + error.toString();
+        errorDiv.style.display = 'block';
+        
+        // Hide success message if visible
+        document.getElementById('form-success').style.display = 'none';
+      })
+      .submitMaterialOrder(formData);
+  }
+  
+  // Validate the form before submission
+  function validateForm() {
+    // Check job ID
+    if (!document.getElementById('jobId').value) {
+      alert('Please select a job');
+      return false;
+    }
+    
+    // Check delivery type and address
+    if (document.getElementById('deliveryType').value === 'Delivery' && 
+        !document.getElementById('deliveryAddress').value) {
+      alert('Please enter a delivery address');
+      return false;
+    }
+    
+    // Check requested date
+    if (!document.getElementById('requestedDate').value) {
+      alert('Please select a requested date');
+      return false;
+    }
+    
+    // Check selected items
+    if (selectedItems.length === 0) {
+      alert('Please add at least one item to your order');
+      return false;
+    }
+    
+    return true;
+  }
+  
+  // Toggle delivery address based on delivery type
+  function toggleDeliveryAddress() {
+    var deliveryType = document.getElementById('deliveryType').value;
+    var addressGroup = document.getElementById('delivery-address-group');
+    
+    if (deliveryType === 'Delivery') {
+      addressGroup.style.display = 'block';
+      document.getElementById('deliveryAddress').setAttribute('required', '');
+    } else {
+      addressGroup.style.display = 'none';
+      document.getElementById('deliveryAddress').removeAttribute('required');
+    }
+  }
+</script>
+
+<style>
+  /* Material Order Form specific styles */
+  .tabs {
+    margin-top: 20px;
+  }
+  
+  .tab-buttons {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .tab-button {
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    margin-right: 5px;
+    cursor: pointer;
+  }
+  
+  .tab-button.active {
+    background: #4285f4;
+    color: white;
+    border-color: #4285f4;
+  }
+  
+  .tab-content {
+    padding: 20px 0;
+  }
+  
+  .tab-pane {
+    display: none;
+  }
+  
+  .tab-pane.active {
+    display: block;
+  }
+  
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+  }
+  
+  .product-card {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    background: white;
+  }
+  
+  .product-card h4 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-size: 16px;
+  }
+  
+  .product-category {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  
+  .product-actions {
+    display: flex;
+    align-items: center;
+  }
+  
+  .product-quantity {
+    width: 60px;
+    margin-right: 10px;
+  }
+  
+  .selected-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  
+  .selected-items-table th,
+  .selected-items-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+  
+  .selected-items-table th {
+    background-color: #f8f9fa;
+  }
+  
+  .item-quantity {
+    width: 60px;
+  }
+  
+  .item-notes {
+    width: 100%;
+  }
+  
+  .package-item {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .search-container {
+    position: relative;
+  }
+  
+  .search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+z-index: 100;
+  }
+  
+  .search-result-item {
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  
+  .search-result-item:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .no-results {
+    padding: 15px;
+    text-align: center;
+    color: #666;
+  }
+  
+  .text-center {
+    text-align: center;
+  }
+</style>

@@ -1,0 +1,300 @@
+<div class="dashboard">
+  <div class="dashboard-header">
+    <h2>Order Dashboard</h2>
+    <button onclick="returnToHome()" class="btn btn-secondary">Back to Home</button>
+  </div>
+  
+  <div class="dashboard-grid">
+    <!-- Material Orders Summary -->
+    <div class="dashboard-card">
+      <h3>Material Orders</h3>
+      <div class="card-stat">
+        <div class="stat-value"><?= materialOrderSummary.totalOrders ?></div>
+        <div class="stat-label">Total Orders</div>
+      </div>
+      
+      <h4>Recent Orders</h4>
+      <div class="recent-orders">
+        <? if (materialOrderSummary.recentOrders.length === 0) { ?>
+          <p>No orders yet.</p>
+        <? } else { ?>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Job</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <? for (var i = 0; i < materialOrderSummary.recentOrders.length; i++) { ?>
+                <tr>
+                  <td><?= materialOrderSummary.recentOrders[i].date.toLocaleDateString() ?></td>
+                  <td><?= materialOrderSummary.recentOrders[i].jobId ?></td>
+                  <td><?= materialOrderSummary.recentOrders[i].status ?></td>
+                </tr>
+              <? } ?>
+            </tbody>
+          </table>
+        <? } ?>
+      </div>
+      
+      <h4>Orders by Status</h4>
+      <div class="chart-container">
+        <canvas id="material-status-chart"></canvas>
+      </div>
+      
+      <h4>Orders by Vendor</h4>
+      <div class="chart-container">
+        <canvas id="material-vendor-chart"></canvas>
+      </div>
+    </div>
+    
+    <!-- Wallcovering Orders Summary -->
+    <div class="dashboard-card">
+      <h3>Wallcovering Equipment Orders</h3>
+      <div class="card-stat">
+        <div class="stat-value"><?= wallcoveringOrderSummary.totalOrders ?></div>
+        <div class="stat-label">Total Orders</div>
+      </div>
+      
+      <h4>Recent Orders</h4>
+      <div class="recent-orders">
+        <? if (wallcoveringOrderSummary.recentOrders.length === 0) { ?>
+          <p>No orders yet.</p>
+        <? } else { ?>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Job</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <? for (var i = 0; i < wallcoveringOrderSummary.recentOrders.length; i++) { ?>
+                <tr>
+                  <td><?= wallcoveringOrderSummary.recentOrders[i].date.toLocaleDateString() ?></td>
+                  <td><?= wallcoveringOrderSummary.recentOrders[i].jobId ?></td>
+                  <td><?= wallcoveringOrderSummary.recentOrders[i].status ?></td>
+                </tr>
+              <? } ?>
+            </tbody>
+          </table>
+        <? } ?>
+      </div>
+      
+      <h4>Orders by Status</h4>
+      <div class="chart-container">
+        <canvas id="wallcovering-status-chart"></canvas>
+      </div>
+      
+      <h4>Orders by Vendor</h4>
+      <div class="chart-container">
+        <canvas id="wallcovering-vendor-chart"></canvas>
+      </div>
+    </div>
+    
+    <!-- User Orders -->
+    <div class="dashboard-card">
+      <h3>My Orders</h3>
+      
+      <div class="orders-container" id="user-orders">
+        <div class="loading">Loading your orders...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize charts
+    var materialOrderSummary = <?= JSON.stringify(materialOrderSummary) ?>;
+    var wallcoveringOrderSummary = <?= JSON.stringify(wallcoveringOrderSummary) ?>;
+    
+    // Material orders status chart
+    if (materialOrderSummary.ordersByStatus.length > 0) {
+      var materialStatusCtx = document.getElementById('material-status-chart').getContext('2d');
+      var materialStatusChart = new Chart(materialStatusCtx, {
+        type: 'pie',
+        data: {
+          labels: materialOrderSummary.ordersByStatus.map(function(item) { return item.status; }),
+          datasets: [{
+            data: materialOrderSummary.ordersByStatus.map(function(item) { return item.count; }),
+            backgroundColor: [
+              '#4285f4', '#ea4335', '#fbbc05', '#34a853', '#5f6368'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'right'
+            }
+          }
+        }
+      });
+    }
+    
+// Material orders vendor chart
+    if (materialOrderSummary.ordersByVendor.length > 0) {
+      var materialVendorCtx = document.getElementById('material-vendor-chart').getContext('2d');
+      var materialVendorChart = new Chart(materialVendorCtx, {
+        type: 'bar',
+        data: {
+          labels: materialOrderSummary.ordersByVendor.map(function(item) { return item.vendorName; }),
+          datasets: [{
+            label: 'Orders',
+            data: materialOrderSummary.ordersByVendor.map(function(item) { return item.count; }),
+            backgroundColor: '#4285f4'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Wallcovering orders status chart
+    if (wallcoveringOrderSummary.ordersByStatus.length > 0) {
+      var wallcoveringStatusCtx = document.getElementById('wallcovering-status-chart').getContext('2d');
+      var wallcoveringStatusChart = new Chart(wallcoveringStatusCtx, {
+        type: 'pie',
+        data: {
+          labels: wallcoveringOrderSummary.ordersByStatus.map(function(item) { return item.status; }),
+          datasets: [{
+            data: wallcoveringOrderSummary.ordersByStatus.map(function(item) { return item.count; }),
+            backgroundColor: [
+              '#4285f4', '#ea4335', '#fbbc05', '#34a853', '#5f6368'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'right'
+            }
+          }
+        }
+      });
+    }
+    
+    // Wallcovering orders vendor chart
+    if (wallcoveringOrderSummary.ordersByVendor.length > 0) {
+      var wallcoveringVendorCtx = document.getElementById('wallcovering-vendor-chart').getContext('2d');
+      var wallcoveringVendorChart = new Chart(wallcoveringVendorCtx, {
+        type: 'bar',
+        data: {
+          labels: wallcoveringOrderSummary.ordersByVendor.map(function(item) { return item.vendorName; }),
+          datasets: [{
+            label: 'Orders',
+            data: wallcoveringOrderSummary.ordersByVendor.map(function(item) { return item.count; }),
+            backgroundColor: '#34a853'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Load user orders
+    loadUserOrders();
+  });
+  
+  // Load user orders
+  function loadUserOrders() {
+    google.script.run
+      .withSuccessHandler(function(result) {
+        var container = document.getElementById('user-orders');
+        
+        if (result.materialOrders.length === 0 && result.wallcoveringOrders.length === 0) {
+          container.innerHTML = '<p>You have not created any orders yet.</p>';
+          return;
+        }
+        
+        var html = '';
+        
+        // Material orders
+        if (result.materialOrders.length > 0) {
+          html += '<h4>My Material Orders</h4>';
+          html += '<table>';
+          html += '<thead><tr><th>Date</th><th>Order ID</th><th>Job</th><th>Status</th></tr></thead>';
+          html += '<tbody>';
+          
+          for (var i = 0; i < result.materialOrders.length; i++) {
+            var order = result.materialOrders[i];
+            html += '<tr>';
+            html += '<td>' + new Date(order.date).toLocaleDateString() + '</td>';
+            html += '<td>' + order.orderId + '</td>';
+            html += '<td>' + order.jobId + '</td>';
+            html += '<td>' + order.status + '</td>';
+            html += '</tr>';
+          }
+          
+          html += '</tbody></table>';
+        }
+        
+        // Wallcovering orders
+        if (result.wallcoveringOrders.length > 0) {
+          html += '<h4>My Wallcovering Equipment Orders</h4>';
+          html += '<table>';
+          html += '<thead><tr><th>Date</th><th>Order ID</th><th>Job</th><th>Status</th></tr></thead>';
+          html += '<tbody>';
+          
+          for (var i = 0; i < result.wallcoveringOrders.length; i++) {
+            var order = result.wallcoveringOrders[i];
+            html += '<tr>';
+            html += '<td>' + new Date(order.date).toLocaleDateString() + '</td>';
+            html += '<td>' + order.orderId + '</td>';
+            html += '<td>' + order.jobId + '</td>';
+            html += '<td>' + order.status + '</td>';
+            html += '</tr>';
+          }
+          
+          html += '</tbody></table>';
+        }
+        
+        container.innerHTML = html;
+      })
+      .withFailureHandler(function(error) {
+        var container = document.getElementById('user-orders');
+        container.innerHTML = '<p class="error">Error loading your orders: ' + error.toString() + '</p>';
+      })
+      .getUserOrderHistory();
+  }
+  
+  // Return to home screen
+  function returnToHome() {
+    window.parent.loadModule('Home');
+  }
+</script>

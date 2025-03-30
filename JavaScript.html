@@ -1,0 +1,212 @@
+<script>
+  // Execute when DOM is loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', handleLogin);
+    }
+    
+    // Initialize other event listeners
+    setupEventListeners();
+  });
+  
+  // Set up event listeners for dynamic elements
+  function setupEventListeners() {
+    // This function can be called after loading new content
+    // to ensure event listeners are attached
+  }
+  
+  // Login handler
+  function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    showLoading();
+    
+    google.script.run
+      .withSuccessHandler(function(result) {
+        hideLoading();
+        if (result.success) {
+          // Instead of reloading the page, directly replace the content
+          document.getElementById('content').innerHTML = result.homeHtml;
+        } else {
+          // Show error
+          const errorDiv = document.getElementById('login-error');
+          errorDiv.textContent = result.message || 'Login failed';
+          errorDiv.style.display = 'block';
+        }
+      })
+      .withFailureHandler(function(error) {
+        hideLoading();
+        const errorDiv = document.getElementById('login-error');
+        errorDiv.textContent = 'Error: ' + (error.message || error);
+        errorDiv.style.display = 'block';
+      })
+      .authenticateUser(username, password);
+  }
+  
+  // Load a specific module
+  function loadModule(moduleName) {
+    showLoading();
+    
+    if (moduleName === 'MaterialOrderForm') {
+      google.script.run
+        .withSuccessHandler(function(html) {
+          document.getElementById('content').innerHTML = html;
+          hideLoading();
+          initializeMaterialOrderForm();
+        })
+        .withFailureHandler(handleError)
+        .getMaterialOrderFormHtml();
+    } 
+    else if (moduleName === 'WallcoveringOrderForm') {
+      google.script.run
+        .withSuccessHandler(function(html) {
+          document.getElementById('content').innerHTML = html;
+          hideLoading();
+          initializeWallcoveringOrderForm();
+        })
+        .withFailureHandler(handleError)
+        .getWallcoveringOrderFormHtml();
+    }
+    else if (moduleName === 'Dashboard') {
+      google.script.run
+        .withSuccessHandler(function(html) {
+          document.getElementById('content').innerHTML = html;
+          hideLoading();
+        })
+        .withFailureHandler(handleError)
+        .getDashboardHtml();
+    }
+  }
+  
+  // Return to home screen
+  function returnToHome() {
+    showLoading();
+    
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.success) {
+          document.getElementById('content').innerHTML = result.homeHtml;
+        } else {
+          alert(result.message || 'Error returning to home.');
+          window.location.reload(); // Fallback
+        }
+        hideLoading();
+      })
+      .withFailureHandler(function(error) {
+        hideLoading();
+        alert('Error returning to home: ' + error);
+        window.location.reload(); // Fallback
+      })
+      .getHomeHtml();
+  }
+  
+function logout() {
+  showLoading();
+  
+  google.script.run
+    .withSuccessHandler(function() {
+      // Replace content with login page instead of reloading
+      google.script.run
+        .withSuccessHandler(function(result) {
+          document.getElementById('content').innerHTML = result.loginHtml;
+          hideLoading();
+        })
+        .withFailureHandler(function(error) {
+          hideLoading();
+          alert('Error loading login page: ' + error);
+          // Fallback to reload if loading login page fails
+          window.location.reload();
+        })
+        .getLoginHtml();
+    })
+    .withFailureHandler(function(error) {
+      hideLoading();
+      alert('Error logging out: ' + error);
+    })
+    .logoutUser();
+}
+  // Loading indicator functions
+  function showLoading() {
+    const loadingDiv = document.getElementById('loading');
+    if (loadingDiv) {
+      loadingDiv.style.display = 'flex';
+    }
+  }
+  
+  function hideLoading() {
+    const loadingDiv = document.getElementById('loading');
+    if (loadingDiv) {
+      loadingDiv.style.display = 'none';
+    }
+  }
+  
+  // Error handler
+  function handleError(error) {
+    hideLoading();
+    alert('Error: ' + (error.message || error));
+  }
+  
+  // Initialize module specific functions (placeholder)
+  function initializeMaterialOrderForm() {
+    // This will be called after loading the Material Order Form
+    console.log('Material Order Form loaded');
+  }
+  
+  function initializeWallcoveringOrderForm() {
+    // This will be called after loading the Wallcovering Order Form
+    console.log('Wallcovering Order Form loaded');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+  console.log("Form initializing...");
+  
+  // Set up event listeners for all interactive elements
+  var paintVendor = document.getElementById('paintVendor');
+  if (paintVendor) paintVendor.addEventListener('change', filterPaintProducts);
+  
+  var paintType = document.getElementById('paintType');
+  if (paintType) paintType.addEventListener('change', filterPaintProducts);
+  
+  var paintSheen = document.getElementById('paintSheen');
+  if (paintSheen) paintSheen.addEventListener('change', filterPaintProducts);
+  
+  var sundriesCategory = document.getElementById('sundriesCategory');
+  if (sundriesCategory) sundriesCategory.addEventListener('change', filterSundries);
+  
+  var deliveryType = document.getElementById('deliveryType');
+  if (deliveryType) deliveryType.addEventListener('change', toggleDeliveryAddress);
+  
+  var jobId = document.getElementById('jobId');
+  if (jobId) jobId.addEventListener('input', searchJobs);
+  
+  // Add event listener for form submission
+  document.getElementById('material-order-form').addEventListener('submit', submitOrder);
+  
+  // Get elements with onclick attributes and add proper listeners
+  var addPackageBtn = document.querySelector('button[onclick="addPackageItem()"]');
+  if (addPackageBtn) {
+    addPackageBtn.removeAttribute('onclick');
+    addPackageBtn.addEventListener('click', addPackageItem);
+  }
+  
+  var returnToHomeBtn = document.querySelector('button[onclick="returnToHome()"]');
+  if (returnToHomeBtn) {
+    returnToHomeBtn.removeAttribute('onclick');
+    returnToHomeBtn.addEventListener('click', returnToHome);
+  }
+  
+  // Initialize tabs
+  initializeTabs();
+  
+  // Display initial products
+  try {
+    filterPaintProducts();
+    filterSundries();
+  } catch (e) {
+    console.error("Error initializing products or sundries:", e);
+  }
+});
+</script>

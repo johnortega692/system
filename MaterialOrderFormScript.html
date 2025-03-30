@@ -31,7 +31,24 @@
     // Initialize first equipment dropdown
     filterEquipmentByVendor();
   });
-  
+google.script.run.withSuccessHandler(function(materials) {
+  const paintTypeDropdown = document.getElementById("paintType");
+  const seen = new Set();
+
+  materials.forEach(row => {
+    const vendor = row[1]; // Column B
+    if (vendor && !seen.has(vendor)) {
+      const option = document.createElement("option");
+      option.value = vendor;
+      option.textContent = vendor;
+      paintTypeDropdown.appendChild(option);
+      seen.add(vendor);
+    }
+  });
+}).getMaterialList();
+
+
+
   // Filter equipment based on vendor selection
   function filterEquipmentByVendor() {
     var vendorId = document.getElementById('vendorId').value;
@@ -265,7 +282,26 @@
       })
       .submitWallcoveringOrder(formData);
   }
-  
+  function initializeTabs() {
+  var tabButtons = document.querySelectorAll('.tab-button');
+
+  tabButtons.forEach(function(button) {
+    button.addEventListener('click', function() {
+      document.querySelectorAll('.tab-button').forEach(function(btn) {
+        btn.classList.remove('active');
+      });
+
+      document.querySelectorAll('.tab-pane').forEach(function(pane) {
+        pane.classList.remove('active');
+      });
+
+      this.classList.add('active');
+      var tabId = this.getAttribute('data-tab') + '-tab';
+      document.getElementById(tabId).classList.add('active');
+    });
+  });
+}
+
   // Reset form to initial state
   function resetForm() {
     // Set default dates
